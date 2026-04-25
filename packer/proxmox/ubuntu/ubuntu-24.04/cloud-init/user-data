@@ -1,0 +1,256 @@
+#cloud-config
+#subiquity
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+# COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+# OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+# Ubuntu Server 22.04 LTS
+
+# For logging...
+output: {all: '| tee -a /var/log/cloud-init-output.log'}
+# Auto-installation
+autoinstall:
+  version: 1
+  ### Set language, keyboard, and timezone with variables
+  locale: '${vm_guest_os_languge}'
+  keyboard:
+    layout: '${vm_guest_os_keyboard}'
+  # ### Timezone settings
+  timezone: '${vm_guest_os_timezone}
+  ### Create Ansible user for post provisioning processes
+  identity:
+    hostname: localhost
+    username: '${ssh_user}'
+    password: '${build_passwd}'
+  ### Apt configuration
+  apt:
+    geoip: true
+    preserve_sources_list: false
+    primary:
+      - arches: [amd64, i386]
+        uri: http://archive.ubuntu.com/ubuntu
+      - arches: [default]
+        uri: http://ports.ubuntu.com/ubuntu-ports
+  ### Kill ssh for install
+  early-commands:
+    - sudo systemctl stop ssh
+  ### Install basic needed packages
+  packages:
+    - build-essential 
+    - ssh 
+    - curl 
+    - jq
+    - rsync 
+    - git 
+    - unzip 
+    - wget 
+    - openssh-server 
+    - qemu-guest-agent
+  ### Configure storage
+  ### Modify partition sizes for the virtual machine hardware.
+  storage:
+    config:
+      ### Create primary system partitions.
+      - ptable: gpt
+        path: /dev/sda
+        wipe: superblock
+        type: disk
+        id: disk-sda
+      ### part /boot --fstype="ext4" --ondisk=sda --size=1024
+      - device: disk-sda
+        size: 1024M
+        wipe: superblock
+        number: 2
+        type: partition
+        id: partition-1
+      - fstype: ext4
+        volume: partition-1
+        label: BOOTFS
+        type: format
+        id: format-boot
+      - path: /boot
+        device: format-boot
+        type: mount
+        id: mount-boot
+      ### part /boot/efi --fstype="efi" --ondisk=sda --size=512 --fsoptions="umask=0077,shortname=winnt"
+      - device: disk-sda
+        size: 512M
+        wipe: superblock
+        flag: boot
+        number: 1
+        grub_device: true
+        type: partition
+        id: partition-0
+      - fstype: fat32
+        volume: partition-0
+        label: EFIFS
+        type: format
+        id: format-efi
+      - path: /boot/efi
+        device: format-efi
+        type: mount
+        id: mount-efi
+      ### part pv.0 --fstype="lvmpv" --ondisk=sda --size=18432
+      - device: disk-sda
+        size: -1
+        wipe: superblock
+        number: 3
+        type: partition
+        id: partition-2
+      ### Create a logical volume management (LVM) group.
+      ### volgroup vgroot --pesize=4096 pv.0
+      - name: vgroot
+        devices:
+          - partition-2
+        type: lvm_volgroup
+        id: lvm_volgroup-0
+      ### Modify logical volume sizes for the virtual machine hardware.
+      ### Create logical volumes.
+      ### logvol / --fstype="ext4" --size=4096 --name=lvroot --vgname=vgroot --label=ROOTFS
+      - name: lvroot
+        volgroup: lvm_volgroup-0
+        size: 4096M
+        wipe: superblock
+        type: lvm_partition
+        id: lvroot
+      - fstype: ext4
+        volume: lvroot
+        type: format
+        label: ROOTFS
+        id: format-root
+      - path: /
+        device: format-root
+        type: mount
+        id: mount-root
+      ### logvol swap --fstype="swap" --size=1024 --name=lvswap --vgname=vgroot --label=SWAPFS
+      - name: lvswap
+        volgroup: lvm_volgroup-0
+        size: 1024M
+        wipe: superblock
+        type: lvm_partition
+        id: lvswap
+      - fstype: swap
+        volume: lvswap
+        type: format
+        label: SWAPFS
+        id: format-swap
+      - path: swap
+        device: format-swap
+        type: mount
+        id: mount-swap
+      ### logvol /home --fstype="ext4" --size=2048 --name=lvhome --vgname=vgroot --label=HOMEFS --fsoptions="nodev,nosuid"
+      - name: lvhome
+        volgroup: lvm_volgroup-0
+        size: 2048M
+        wipe: superblock
+        type: lvm_partition
+        id: lvhome
+      - fstype: ext4
+        volume: lvhome
+        type: format
+        label: HOMEFS
+        id: format-home
+      - path: /home
+        device: format-home
+        type: mount
+        id: mount-home
+      ### logvol /tmp --fstype="ext4" --size=2048 --name=lvtmp --vgname=vgroot --label=TMPFS --fsoptions="nodev,noexec,nosuid"
+      - name: lvtmp
+        volgroup: lvm_volgroup-0
+        size: 2048M
+        wipe: superblock
+        type: lvm_partition
+        id: lvtmp
+      - fstype: ext4
+        volume: lvtmp
+        type: format
+        label: TMPFS
+        id: format-tmp
+      - path: /tmp
+        device: format-tmp
+        type: mount
+        id: mount-tmp
+      ### logvol /opt --fstype="ext4" --size=1024 --name=lvopt --vgname=vgroot --label=OPTFS --fsoptions="nodev"
+      - name: lvopt
+        volgroup: lvm_volgroup-0
+        size: 1024M
+        wipe: superblock
+        type: lvm_partition
+        id: lvopt
+      - fstype: ext4
+        volume: lvopt
+        type: format
+        label: OPTFS
+        id: format-opt
+      - path: /opt
+        device: format-opt
+        type: mount
+        id: mount-opt
+      ### logvol /var --fstype="ext4" --size=2048 --name=lvvar --vgname=vgroot --label=VARFS --fsoptions="nodev"
+      - name: lvvar
+        volgroup: lvm_volgroup-0
+        size: 2048M
+        wipe: superblock
+        type: lvm_partition
+        id: lvvar
+      - fstype: ext4
+        volume: lvvar
+        type: format
+        label: VARFS
+        id: format-var
+      - path: /var
+        device: format-var
+        type: mount
+        id: mount-var
+      ### logvol /var/log --fstype="ext4" --size=2048 --name=lvvarlog --vgname=vgroot --label=LOGFS --fsoptions="nodev,noexec,nosuid"
+      - name: lvvarlog
+        volgroup: lvm_volgroup-0
+        size: 2048M
+        wipe: superblock
+        type: lvm_partition
+        id: lvvarlog
+      - fstype: ext4
+        volume: lvvarlog
+        type: format
+        label: LOGFS
+        id: format-log
+      - path: /var/log
+        device: format-log
+        type: mount
+        id: mount-log
+      ### logvol /var/log/audit --fstype="ext4" --size=1024 --name=lvvarlogaudit --vgname=vgroot --label=AUDITFS --fsoptions="nodev,noexec,nosuid"
+      - name: lvvaraudit
+        volgroup: lvm_volgroup-0
+        size: 1024M
+        wipe: superblock
+        type: lvm_partition
+        id: lvvaraudit
+      - fstype: ext4
+        volume: lvvaraudit
+        type: format
+        label: AUDITFS
+        id: format-audit
+      - path: /var/audit
+        device: format-audit
+        type: mount
+        id: mount-audit
+  ### Setup SSH
+  ssh:
+    install-server: true
+    allow-pw: false
+    authorized-keys:
+      - ${build_key}
+  ### Post install script to configure sudo access for build user. 
+  late-commands:
+    ### Setup Firewall
+    - ufw default deny incoming
+    - ufw default allow outgoing
+    - ufw allow ssh
+    - ufw enable
+    ### Setup SSH Server
+    - systemctl enable ssh    
+    ### Setup Sudoer's Config for Ansible
+    - echo '${ssh_user} ALL=(ALL) NOPASSWD:ALL' > /target/etc/sudoers.d/${ssh_user}
+    - curtin in-target --target=/target -- chmod 440 /etc/sudoers.d/${ssh_user}
+  shutdown: reboot
