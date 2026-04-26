@@ -1,258 +1,297 @@
-// Proxmox settings 
+// Proxmox settings
 variable "proxmox_host" {
-    type = string 
+    type        = string
     description = "The proxmox host"
 }
 
 variable "proxmox_user" {
-    type = string 
+    type        = string
     description = "The username of the proxmox user"
 }
 
 variable "proxmox_apikey" {
-    type = string
+    type        = string
     description = "Proxmox API secret key"
-    sensitive = true
+    sensitive   = true
 }
 
 variable "proxmox_node" {
-    type = string 
+    type        = string
     description = "The proxmox node on which the packer template will be created on"
 }
 
+variable "proxmox_vm_storage_pool" {
+    type        = string
+    description = "The storage pool on Proxmox for VM disks and EFI (e.g. 'local-lvm')"
+}
 
-// Virtual machine settings 
+variable "proxmox_iso_storage_pool" {
+    type        = string
+    description = "The storage pool on Proxmox for ISO images (e.g. 'local')"
+    default     = "local"
+}
+
+
+// Virtual machine settings
+variable "vm_id" {
+    type        = number
+    description = "The Proxmox VM ID for the template"
+}
+
 variable "vm_qemu_agent" {
-    type = bool
+    type        = bool
     description = "Enables qemu agent option for virtual machine."
-    default = true
+    default     = true
 }
 
 variable "vm_name" {
-    type = string
+    type        = string
     description = "Name of the new template to create"
 }
 
+variable "vm_template_name" {
+    type        = string
+    description = "Name of the resulting Proxmox template"
+}
+
+variable "vm_template_description" {
+    type        = string
+    description = "Description of the resulting Proxmox template"
+    default     = ""
+}
+
 variable "vm_bios_type" {
-    type = string
-    description =  "The virtual machine BIOS type (e.g. 'ovmf' or 'seabios')"
-    default = "ovmf"
+    type        = string
+    description = "The virtual machine BIOS type (e.g. 'ovmf' or 'seabios')"
+    default     = "ovmf"
 }
 
 variable "vm_cpu_cores" {
-    type = number
-    description = "Number of CPU cores to for virtual machine (e.g. 1 core)"
+    type        = number
+    description = "Number of CPU cores for the virtual machine"
 }
 
 variable "vm_cpu_count" {
-    type = number
-    description = "The number of virtual CPU per socket (e.g. 1)"
+    type        = number
+    description = "The number of virtual CPU sockets"
 }
 
 variable "vm_cpu_type" {
-    type = string
+    type        = string
     description = "The CPU type for the virtual machine"
 }
 
-
 variable "vm_mem_size" {
-    type = number
-    description = "The size for the virtual memory in MB. (e.g. '2048')"
+    type        = number
+    description = "The size of virtual memory in MB (e.g. 2048)"
 }
 
-variable  "vm_guest_os_type" {
-    type = string
-    description = "The guest operating system type. (e.g. 'l26' for Linux 2.6+)"
+variable "vm_guest_os_type" {
+    type        = string
+    description = "The guest operating system type (e.g. 'l26' for Linux 2.6+)"
 }
 
 variable "vm_disk_size" {
-    type = string 
+    type        = string
     description = "The size of the virtual disk (e.g. 60G)"
-    default = "60G"
+    default     = "60G"
+}
+
+variable "disk_format" {
+    type        = string
+    description = "The disk image format (e.g. 'raw', 'qcow2')"
+    default     = "raw"
 }
 
 variable "vm_guest_os_keyboard" {
-    type = string
+    type        = string
     description = "The guest operating system keyboard input."
-    default = "us"
+    default     = "us"
 }
 
 variable "vm_guest_os_language" {
-    type = string
+    type        = string
     description = "The guest operating system language"
-    default = "en_US"
+    default     = "en_US"
 }
 
 variable "vm_guest_os_timezone" {
-    type = string 
+    type        = string
     description = "The guest operating system timezone"
-    default = "SGT"
+    default     = "UTC"
 }
 
 variable "vm_network_model" {
-    type = string
-    description = "The virtual network adapter type. (e.g. 'vmxnet3' or 'virtio')"
-    default = "virtio"
+    type        = string
+    description = "The virtual network adapter type (e.g. 'virtio')"
+    default     = "virtio"
 }
 
 variable "vm_scsi_controller" {
-    type = string
-    description = "The virtual SCSI controller type. (e.g. 'virtio-scsi-single')"
-    default = "virtio-scsi-single"
+    type        = string
+    description = "The virtual SCSI controller type (e.g. 'virtio-scsi-single')"
+    default     = "virtio-scsi-single"
 }
 
-// VM guest partition size 
+
+// VM guest partition sizes (MB)
 variable "vm_guest_part_audit" {
-    type = number
-    description = "Size of the /var/log/audit/ partition in MB."
+    type        = number
+    description = "Size of the /var/log/audit partition in MB."
 }
 
 variable "vm_guest_part_boot" {
-    type = number
+    type        = number
     description = "Size of the /boot partition in MB."
 }
 
 variable "vm_guest_part_efi" {
-    type = number
+    type        = number
     description = "Size of the /boot/efi partition in MB."
 }
 
 variable "vm_guest_part_home" {
-    type = number
-    description = "Size of the /home/ partition in MB."
+    type        = number
+    description = "Size of the /home partition in MB."
 }
 
 variable "vm_guest_part_log" {
-    type = number 
-    description = "Size of the /var/log/ partition in MB."
+    type        = number
+    description = "Size of the /var/log partition in MB."
 }
 
 variable "vm_guest_part_root" {
-    type = number 
-    description = "Size of the /root/ partition in MB."
+    type        = number
+    description = "Size of the / partition in MB. Use 0 to fill remaining space."
 }
 
 variable "vm_guest_part_swap" {
-    type = number 
+    type        = number
     description = "Size of the swap partition in MB."
 }
 
 variable "vm_guest_part_tmp" {
-    type = number
-    description = "Size of the /tmp/ partition in MB."
+    type        = number
+    description = "Size of the /tmp partition in MB."
 }
 
 variable "vm_guest_part_var" {
-    type = number 
-    description = "Size of the /var/ partition in MB."
+    type        = number
+    description = "Size of the /var partition in MB."
 }
 
 variable "vm_guest_part_vartmp" {
-    type = number
-    description = "Size of the /var/tmp/ partition in MB"
+    type        = number
+    description = "Size of the /var/tmp partition in MB."
 }
 
-// Removable Media settings 
+
+// Removable media settings
 variable "cd_label" {
-    type = string
-    description = "CD label"
-    default = "cidata"
+    type        = string
+    description = "CD label for the cloud-init ISO"
+    default     = "cidata"
 }
 
 variable "iso_checksum_type" {
-    type = string
-    description = "The ISO checksum algorithm used by the vendor. (e.g. 'sha256')"
+    type        = string
+    description = "The ISO checksum algorithm (e.g. 'sha256')"
 }
 
 variable "iso_checksum_value" {
-    type = string
+    type        = string
     description = "The checksum value provided by the vendor."
 }
 
 variable "proxmox_iso_path" {
-    type = string
-    description = "The path on the proxmox server where the ISO image is stored (e.g. '/var/lib/vz/template/iso')"
-    default = "local"
+    type        = string
+    description = "The storage path for ISO images on Proxmox (e.g. 'local:iso')"
+    default     = "local:iso"
 }
 
 variable "iso_file" {
-    type = string
-    description = "The file name of the ISO image used by the vendor. (e.g. 'ubuntu-<version>-live-server-amd65.iso' )"
+    type        = string
+    description = "The ISO filename (e.g. 'ubuntu-24.04.1-live-server-amd64.iso')"
 }
 
 variable "iso_url" {
-    type = string 
-    description = "The URL source of where the ISO image is stored (e.g. https://mirror.example.com/.../os.iso)"
+    type        = string
+    description = "The download URL for the ISO image"
 }
 
 variable "unmount_iso" {
-    type = bool
-    description = "If true, unmount the ISO image after installation."
-    default = true
+    type        = bool
+    description = "If true, unmount the ISO after installation."
+    default     = true
 }
 
-// BOOT settings
+
+// Boot settings
 variable "vm_boot_command" {
-    type = list(string)
-    description = "The virtual machine boot command"
-    default = []
+    type        = list(string)
+    description = "The virtual machine boot command sequence"
+    default     = []
 }
 
 variable "vm_boot_wait" {
-    type = string
-    description = "The time to wait before boot."
+    type        = string
+    description = "The time to wait before sending the boot command."
 }
+
 
 // Communicator settings
-variable "build_remove_keys" {
-    type = bool
-    description = "If true, packer will remove its temporary key from ~/.ssh/authorized_keys and /root/.ssh/authorized_keys"
-    default = true
+variable "build_username" {
+    type        = string
+    description = "The username of the build user created during installation."
+    default     = "ubuntu"
 }
 
-variable "communicator_insecure" {
-    type = bool
-    description = "If true, do not check the client certificate chain and hostname"
-    default = true
+variable "build_password_hash" {
+    type        = string
+    description = "The SHA-512 hashed password for the build user. Generate with: mkpasswd -m sha-512"
+    sensitive   = true
+}
+
+variable "build_remove_keys" {
+    type        = bool
+    description = "If true, remove the temporary SSH key after build."
+    default     = true
 }
 
 variable "communicator_port" {
-    type = number
-    description = "The port of the communicator protocol."
-}
-
-variable "communicator_ssl" {
-    type = bool 
-    description = "If true, use SSL protocol"
-    default = true
+    type        = number
+    description = "The SSH port."
+    default     = 22
 }
 
 variable "communicator_timeout" {
-    type = string
-    description = "The timeout of the communicator procotol."
+    type        = string
+    description = "The SSH connection timeout."
+    default     = "30m"
 }
 
-// Provisioner settings 
+
+// Provisioner settings
 variable "cloud_init_apt_packages" {
-    type = list(string)
-    description = "A list of apt packages to install during the subquity cloud-init installer"
-    default = []
+    type        = list(string)
+    description = "A list of apt packages to install during cloud-init"
+    default     = []
 }
 
 variable "cloud_init_apt_mirror" {
-    type = string
-    description = "Sets the default apt mirror during the subquity cloud-init installer"
-    default = ""
+    type        = string
+    description = "Optional apt mirror URL. Leave empty to use the Ubuntu default."
+    default     = ""
 }
 
 variable "post_install_scripts" {
-    type = list(string)
-    description = "A list of scripts and their relative paths to transfer and run after OS install."
-    default = []
+    type        = list(string)
+    description = "Scripts to run after OS installation, relative to the build directory."
+    default     = []
 }
 
 variable "pre_final_scripts" {
-    type = list(string)
-    description = "A list of scripts and their relative paths to transfer and run before finalization."
-    default = []
+    type        = list(string)
+    description = "Scripts to run before template finalization, relative to the build directory."
+    default     = []
 }
