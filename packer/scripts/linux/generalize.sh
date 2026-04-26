@@ -58,5 +58,5 @@ history -cw
 echo > ~/.bash_history
 sudo rm -f /root/.bash_history
 
-echo '>> Clearing sudoers.d...'
-sudo rm -f /etc/sudoers.d/*
+echo '>> Clearing sudoers.d packer temp entries...'
+sudo rm -f /etc/sudoers.d/90-cloud-init-users

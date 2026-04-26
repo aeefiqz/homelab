@@ -1,7 +1,7 @@
 #!/usr/bin/env -S bash -eu
 # cleans up unneeded packages to reduce the size of the image 
 
-if awk -F= '/^ID=/{print $2}' /etc/os-release | grep -q debian; then
+if awk -F= '/^ID=/{print $2}' /etc/os-release | grep -qE 'ubuntu|debian'; then
 	echo ">> Cleaning up unneeded packages..."
 	sudo apt-get -y autoremove --purge
 	sudo apt-get -y clean

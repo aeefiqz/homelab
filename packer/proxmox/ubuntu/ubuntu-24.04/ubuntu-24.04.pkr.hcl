@@ -152,13 +152,13 @@ build {
     ]
 
     provisioner "shell" {
-        execute_command   = "bash {{ .Path }}"
+        execute_command   = "sudo bash {{ .Path }}"
         expect_disconnect = true
         scripts           = formatlist("${path.cwd}/%s", var.post_install_scripts)
     }
 
     provisioner "shell" {
-        execute_command   = "bash {{ .Path }}"
+        execute_command   = "sudo bash {{ .Path }}"
         expect_disconnect = true
         pause_before      = "30s"
         scripts           = formatlist("${path.cwd}/%s", var.pre_final_scripts)
