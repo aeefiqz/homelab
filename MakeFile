@@ -1,0 +1,19 @@
+ANSIBLE_DIR=ansible
+PACKER_DIR=packer
+KUBERNETES_DIR=kubernetes
+TERRAFORM_DIR=terraform
+
+
+
+
+check-terraform-deps:
+	@command -v terraform >/dev/null 2>&1 || { echo >&2 "Terraform is not installed. Please install Terraform to proceed."; exit 1; }
+	@
+test_1:
+	echo "This is a test command for test_1"
+
+test_2:
+	echo "This is a test command for test_2"
+
+test_3:
+	echo "This is a test command for test_3"

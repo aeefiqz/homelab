@@ -1,6 +1,5 @@
 # Project Name: Home lab
-
-> One-line description of what this project does and who it's for. <!-- Keep it under 15 words: what it does + who benefits -->
+This project utilize infrastructure as code and GitOps to automate provisioning, operating and updating self-hosted services in my homelab.
 
 <!-- Badges: replace `your-username`, `your-repo`, and `your-branch` throughout -->
 ![Build Status](https://img.shields.io/github/actions/workflow/status/your-username/your-repo/ci.yml?branch=main&style=flat-square)
