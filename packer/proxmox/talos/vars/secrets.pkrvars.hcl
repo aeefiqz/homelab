@@ -1,5 +1,0 @@
-proxmox_api_url="https://192.168.68.71:8006/api2/json"
-proxmox_node = "pve-01"
-proxmox_api_token_id="root@pam!packer"
-proxmox_api_token_secret="9748385d-397d-43b6-a2c9-19ec97ce024c"
-# fb3760e1-ded1-4b09-9a06-95647f028742"

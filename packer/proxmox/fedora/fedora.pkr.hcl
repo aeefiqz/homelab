@@ -72,7 +72,7 @@ source "proxmox-iso" "fedora" {
   vm_name              = "base-${var.fedora_version}"
   template_name        = var.vm_template_name
   template_description = "Base image for Fedora ${var.fedora_version} created on ${local.build_date} with ${local.build_tool}"
-  guest_os_type        = var.vm_guest_os_type // FIX: was os = (wrong attribute name)
+  os                   = var.vm_guest_os_type
   qemu_agent           = var.vm_qemu_agent
   scsi_controller      = var.vm_scsi_controller
 
@@ -111,9 +111,9 @@ source "proxmox-iso" "fedora" {
 
   // iso — FIX: vm_iso_type/vm_iso_file/vm_iso_checksum_value were all undefined vars
   boot_iso {
-    iso_file     = "${var.proxmox_iso_path}/${var.iso_file}"
-    iso_checksum = local.iso_checksum
-    unmount      = true
+    iso_file = "${var.proxmox_iso_path}/${var.iso_file}"
+    unmount  = true
+    // iso_checksum not needed here: iso_file points to an ISO already on Proxmox storage
   }
 
   // network

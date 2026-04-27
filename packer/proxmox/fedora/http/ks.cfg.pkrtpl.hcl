@@ -1,5 +1,4 @@
 ## Keyboard layouts
-## FIX: was ${vconsole_keymap}/${keyboard_layout} — now uses vars passed by templatefile()
 keyboard --vckeymap=${vm_guest_os_keyboard} --xlayouts='${vm_guest_os_keyboard}'
 
 ## System language
