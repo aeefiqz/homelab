@@ -109,11 +109,13 @@ source "proxmox-iso" "fedora" {
     tpm_version      = "v2.0"
   }
 
-  // iso — FIX: vm_iso_type/vm_iso_file/vm_iso_checksum_value were all undefined vars
+  // iso — download from iso_url if not already on Proxmox, verify with checksum
   boot_iso {
-    iso_file = "${var.proxmox_iso_path}/${var.iso_file}"
-    unmount  = true
-    // iso_checksum not needed here: iso_file points to an ISO already on Proxmox storage
+    type             = "ide"
+    iso_url          = var.iso_url
+    iso_checksum     = local.iso_checksum
+    iso_storage_pool = var.proxmox_iso_storage_pool
+    unmount          = true
   }
 
   // network
