@@ -1,3 +1,5 @@
+// BLOCK: packer
+// The packer configuration
 packer {
   required_plugins {
     proxmox = {
@@ -11,14 +13,22 @@ packer {
   }
 }
 
+// BLOCK: data
+// Define variables for data 
+# SSH key pair for Packer to use for provisioning; generated at build time by sshkey data source
 data "sshkey" "install" {
   type = "ed25519"
   name = "packer_key"
 }
 
+
+// BLOCK: local
+// Define the local variables
 locals {
+  scripts_root = abspath("${path.root}/../../../scripts/linux")
   build_date           = formatdate("YYYY-MM-DD hh:mm ZZZ", timestamp())
   build_tool           = "Hashicorp Packer ${packer.version}"
+  build_description    = "Fedora ${var.fedora_version} base image template\nBuild Date ${local.build_date}\nBuild tool: ${local.build_tool}"
   iso_checksum         = "${var.iso_checksum_type}:${var.iso_checksum_value}"
   ssh_private_key_file = data.sshkey.install.private_key_path
   ssh_public_key       = data.sshkey.install.public_key
@@ -26,11 +36,11 @@ locals {
   data_source_content = {
     "/ks.cfg" = templatefile("${abspath(path.root)}/http/ks.cfg.pkrtpl.hcl", {
       // FIX: was local.build_password_hash / local.build_username (undefined locals)
-      build_password_hash = var.build_password_hash
-      build_username      = var.build_username
-      rpm_packages        = var.kickstart_rpm_packages
-      // FIX: was local.build_public_key (undefined local); now uses var with fallback
-      ssh_keys             = var.build_public_key != "" ? concat([local.ssh_public_key], [var.build_public_key]) : [local.ssh_public_key]
+      build_username       = var.build_username
+      build_password_hash  = var.build_password_hash
+      packages             = var.packages
+      repo_mirror          = var.repo_mirror
+      ssh_keys             = [local.ssh_public_key] // for proxmox to ssh into the vm
       vm_guest_os_hostname = var.vm_name
       vm_guest_os_keyboard = var.vm_guest_os_keyboard
       vm_guest_os_language = var.vm_guest_os_language
@@ -51,15 +61,15 @@ locals {
 
 // FIX: was source "proxmox" — correct builder for ISO-based builds is "proxmox-iso"
 source "proxmox-iso" "fedora" {
-  // proxmox connection
+  // proxmox settings
   node                     = var.proxmox_node
   proxmox_url              = "https://${var.proxmox_host}:8006/api2/json"
   username                 = var.proxmox_user
   token                    = var.proxmox_token
   insecure_skip_tls_verify = true // no SSL cert on Proxmox; FIX: consider adding proper cert and removing this in production
-  task_timeout             = "10m"
+  task_timeout             = "10m" //https://github.com/hashicorp/packer-plugin-proxmox/issues/313
 
-  // virtual machine
+  // virtual machine settings
   vm_id                = var.vm_id
   vm_name              = "base-${var.fedora_version}"
   template_name        = var.vm_template_name
@@ -67,19 +77,20 @@ source "proxmox-iso" "fedora" {
   os                   = var.vm_guest_os_type
   qemu_agent           = var.vm_qemu_agent
   scsi_controller      = var.vm_scsi_controller
+ 
+  // cloud init
+  cloud_init = true
+  cloud_init_storage_pool = var.proxmox_vm_storage_pool
 
   // bios
   bios = var.vm_bios_type
 
   // cpu and memory
-  // FIX: cpu_cores → cores, cpu_count → sockets; removed cpu_sockets (undefined var)
-  cpu_type = var.vm_cpu_type
   cores    = var.vm_cpu_cores
   sockets  = var.vm_cpu_count
   memory   = var.vm_memory
 
   // disk
-  // FIX: vm_disk_storage_pool → proxmox_vm_storage_pool; vm_disk_format → disk_format
   disks {
     type         = var.vm_disk_type
     disk_size    = var.vm_disk_size
@@ -88,14 +99,14 @@ source "proxmox-iso" "fedora" {
     io_thread    = true
   }
 
-  // efi — FIX: block name was efi {}, correct name is efi_config {}
+  // efi 
   efi_config {
     efi_storage_pool  = var.proxmox_vm_storage_pool
     efi_type          = var.vm_efi_type
     pre_enrolled_keys = false
   }
 
-  // tpm — FIX: was empty tpm {}; correct block name is tpm_config and version is required
+  // tpm 
   tpm_config {
     tpm_storage_pool = var.proxmox_vm_storage_pool
     tpm_version      = "v2.0"
@@ -116,7 +127,7 @@ source "proxmox-iso" "fedora" {
     model  = var.vm_network_model
   }
 
-  // boot — FIX: was var.vm_boot_command (vars file pointed to cdrom; HCL serves via HTTP)
+  // boot 
   boot_command = var.vm_boot_command
   boot_wait    = var.vm_boot_wait
 
@@ -124,24 +135,28 @@ source "proxmox-iso" "fedora" {
   http_content = local.data_source_content
 
   // communicator — FIX: was missing entirely (Packer had no way to SSH into the VM)
-  communicator         = "ssh"
-  ssh_username         = var.build_username
-  ssh_private_key_file = local.ssh_private_key_file
-  ssh_port             = var.communicator_port
-  ssh_timeout          = var.communicator_timeout
+  communicator             = "ssh"
+  ssh_port                 = var.communicator_port //default 22
+  ssh_timeout              = var.communicator_timeout
+  ssh_clear_authorized_keys = var.build_remove_keys
+  ssh_username             = var.build_username
+  ssh_private_key_file     = local.ssh_private_key_file
+  ssh_handshake_attempts   = "100"
 }
 
 build {
-  // FIX: was source.proxmox.fedora (must match renamed builder type)
   sources = ["source.proxmox-iso.fedora"]
-  // FIX: removed broken file provisioners (wrong paths; kickstart is served via HTTP)
-  provisioner "file" {
-    source      = "${abspath(path.root)}/scripts/linux/wait-for-cloud-init.sh"
-    destination = "/tmp/wait-for-cloud-init.sh"
-  }
 
-  provisioner "file" {
-    source      = "${abspath(path.root)}/scripts/linux/cleanup-subiquity.sh"
-    destination = "/tmp/cleanup-subiquity.sh"
-  }
+    provisioner "shell" {
+        execute_command   = "sudo bash {{ .Path }}"
+        expect_disconnect = true
+        scripts           = [for s in var.post_install_scripts : "${local.scripts_root}/${s}"]
+    }
+
+    provisioner "shell" {
+        execute_command   = "sudo bash {{ .Path }}"
+        expect_disconnect = true
+        pause_before      = "30s"
+        scripts           = [for s in var.pre_final_scripts : "${local.scripts_root}/${s}"]
+    }
 }

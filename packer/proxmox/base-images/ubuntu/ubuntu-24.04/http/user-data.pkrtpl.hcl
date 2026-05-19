@@ -4,7 +4,6 @@
 
 # For logging
 output: {all: '| tee -a /var/log/cloud-init-output.log'}
-
 autoinstall:
   version: 1
   ### Language, keyboard, and timezone
@@ -34,25 +33,28 @@ autoinstall:
       - arches: [amd64, i386]
         uri: http://archive.ubuntu.com/ubuntu
       - arches: [default]
-        uri: ${ length(apt_mirror) > 0 ? apt_mirror : "http://ports.ubuntu.com/ubuntu-ports" }
+        uri: ${ length(repo_mirror) > 0 ? repo_mirror : "http://ports.ubuntu.com/ubuntu-ports" }
   ### Stop SSH during install
   early-commands:
     - sudo systemctl stop ssh
   ### Additional packages
-%{ if length(apt_packages) > 0 ~}
+%{ if length(packages) > 0 ~}
   packages:
-%{ for package in apt_packages ~}
+%{ for package in packages ~}
     - ${package}
 %{ endfor ~}
 %{ endif ~}
-  ### Storage configuration
+  ### Storage configuration - partitioning, formatting, and mounting
   storage:
     config:
+      # Disk partitioning
       - ptable: gpt
         path: /dev/sda
         wipe: superblock
         type: disk
         id: disk-sda
+        
+      # /boot/efi system partition
       - device: disk-sda
         size: ${vm_guest_part_efi}M
         wipe: superblock
@@ -66,7 +68,9 @@ autoinstall:
         label: EFIFS
         type: format
         id: format-efi
-      - device: disk-sda
+
+      # /boot partition
+      - device: disk-sda  
         size: ${vm_guest_part_boot}M
         wipe: superblock
         number: 2
@@ -77,6 +81,8 @@ autoinstall:
         label: BOOTFS
         type: format
         id: format-boot
+        
+      # LVM physical volume on remaining disk space
       - device: disk-sda
         size: -1
         wipe: superblock
@@ -88,6 +94,7 @@ autoinstall:
           - partition-2
         type: lvm_volgroup
         id: lvm_volgroup-0
+      # Logical volumes
       - name: home
         volgroup: lvm_volgroup-0
         size: ${vm_guest_part_home}M
@@ -208,7 +215,7 @@ autoinstall:
   user-data:
     package_upgrade: true
     timezone: '${vm_guest_os_timezone}'
-    disable_root: false
+    disable_root: true #lock root account 
   ssh:
     install-server: true
     allow-pw: true
